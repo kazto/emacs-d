@@ -1,164 +1,311 @@
-(eval-and-compile
-  (when (or load-file-name byte-compile-current-file)
-    (setq user-emacs-directory
-	  (expand-file-name
-	   (file-name-directory (or load-file-name byte-compile-current-file))))))
+;; init.el --- My init.el -*- lexical-binding: t -*-
+;; Configurations for Emacs
+;; kazto <kazto@kazto.dev>
 
-(eval-and-compile
-  (customize-set-variable
-   'package-archives '(("gnu"   . "https://elpa.gnu.org/packages/")
-		       ("melpa" . "https://melpa.org/packages/")
-		       ("org"   . "https://orgmode.org/elpa/")))
-  (package-initialize)
-  (unless (package-installed-p 'leaf)
-    (package-refresh-contents)
-    (package-install 'leaf))
+(setq user-full-name "kazto")
+(setq user-mail-address "kazto@kazto.dev")
 
-  (leaf leaf-keywords
-	:ensure t
-	:init
-	;; optional packages if you want to use :hydra, :el-get, :blackout,,,
-	(leaf hydra :ensure t)
-	(leaf el-get :ensure t)
-	(leaf blackout :ensure t)
+;;
+(defconst my/before-load-init-time (current-time))
 
-	:config
-	;; initialize leaf-keywords.el
-	(leaf-keywords-init)))
+;;;###autoload
+(defun my/load-init-time ()
+  "Loading time of user init files including time for `after-init-hook'."
+  (let ((time1 (float-time
+                (time-subtract after-init-time my/before-load-init-time)))
+        (time2 (float-time
+                (time-subtract (current-time) my/before-load-init-time))))
+    (message (concat "Loading init files: %.0f [msec], "
+                     "of which %.f [msec] for `after-init-hook'.")
+             (* 1000 time1) (* 1000 (- time2 time1)))))
+(add-hook 'after-init-hook #'my/load-init-time t)
 
-(leaf cc-mode
-  :doc "major mode for editing C and similar languages"
-  :tag "builtin"
-  :defvar (c-basic-offset)
-  :bind (c-mode-base-map
-	 ("C-c c" . compile))
-  :mode-hook
-  (c-mode-hook . ((c-set-style "bsd")
-		  (setq c-basic-offset 4)))
-  (c++-mode-hook . ((c-set-style "bsd")
-		    (setq c-basic-offset 4))))
+(defvar my/tick-previous-time my/before-load-init-time)
 
-(leaf paren
-  :doc "highlight matching paren"
-  :tag "builtin"
-  :custom ((show-paren-delay . 0.1))
-  :global-minor-mode show-paren-mode)
-(leaf ivy
-  :doc "Incremental Vertical completYon"
-  :req "emacs-24.5"
-  :tag "matching" "emacs>=24.5"
-  :url "https://github.com/abo-abo/swiper"
-  :emacs>= 24.5
-  :ensure t
-  :blackout t
-  :leaf-defer nil
-  :custom ((ivy-initial-inputs-alist . nil)
-	   (ivy-use-selectable-prompt . t))
-  :global-minor-mode t
-  :config
-  (leaf swiper
-    :doc "Isearch with an overview. Oh, man!"
-    :req "emacs-24.5" "ivy-0.13.0"
-    :tag "matching" "emacs>=24.5"
-    :url "https://github.com/abo-abo/swiper"
-    :emacs>= 24.5
-    :ensure t
-    :bind (("C-s" . swiper)))
+;;;###autoload
+(defun my/tick-init-time (msg)
+  "Tick boot sequence at loading MSG."
+  (when my/loading-profile-p
+    (let ((ctime (current-time)))
+      (message "---- %5.2f[ms] %s"
+               (* 1000 (float-time
+                        (time-subtract ctime my/tick-previous-time)))
+               msg)
+      (setq my/tick-previous-time ctime))))
 
-  (leaf counsel
-    :doc "Various completion functions using Ivy"
-    :req "emacs-24.5" "swiper-0.13.0"
-    :tag "tools" "matching" "convenience" "emacs>=24.5"
-    :url "https://github.com/abo-abo/swiper"
-    :emacs>= 24.5
-    :ensure t
-    :blackout t
-    :bind (("C-S-s" . counsel-imenu)
-	   ("C-x C-r" . counsel-recentf))
-    :custom `((counsel-yank-pop-separator . "\n----------\n")
-	      (counsel-find-file-ignore-regexp . ,(rx-to-string '(or "./" "../") 'no-group)))
-    :global-minor-mode t))
+(defun my/emacs-init-time ()
+  "Emacs booting time in msec."
+  (interactive)
+  (message "Emacs booting time: %.0f [msec] = `emacs-init-time'."
+           (* 1000
+              (float-time (time-subtract
+                           after-init-time
+                           before-init-time)))))
 
-(leaf prescient
-  :doc "Better sorting and filtering"
-  :req "emacs-25.1"
-  :tag "extensions" "emacs>=25.1"
-  :url "https://github.com/raxod502/prescient.el"
-  :emacs>= 25.1
-  :ensure t
-  :custom ((prescient-aggressive-file-save . t))
-  :global-minor-mode prescient-persist-mode)
+(add-hook 'after-init-hook #'my/emacs-init-time)
 
-(leaf ivy-prescient
-  :doc "prescient.el + Ivy"
-  :req "emacs-25.1" "prescient-4.0" "ivy-0.11.0"
-  :tag "extensions" "emacs>=25.1"
-  :url "https://github.com/raxod502/prescient.el"
-  :emacs>= 25.1
-  :ensure t
-  :after prescient ivy
-  :custom ((ivy-prescient-retain-classic-highlighting . t))
-  :global-minor-mode t)
+;; -- autoload if found -------------------------------------------------------------
+(defun autoload-if-found (functions file &optional docstring interactive type)
+  "Set autoload if FILE has found."
+  (when (locate-library file)
+    (dolist (f functions)
+      (autoload f file docstring interactive type))))
 
-(leaf flycheck
-  :doc "On-the-fly syntax checking"
-  :req "dash-2.12.1" "pkg-info-0.4" "let-alist-1.0.4" "seq-1.11" "emacs-24.3"
-  :tag "minor-mode" "tools" "languages" "convenience" "emacs>=24.3"
-  :url "http://www.flycheck.org"
-  :emacs>= 24.3
-  :ensure t
-  :bind (("M-n" . flycheck-next-error)
-	 ("M-p" . flycheck-previous-error))
-  :global-minor-mode global-flycheck-mode)
+;; -- show trailing whitespace ------------------------------------------------------
+(defun my/disable-show-trailing-whitespace ()
+  (setq show-trailing-whitespace nil))
 
-(leaf company
-  :doc "Modular text completion framework"
-  :req "emacs-24.3"
-  :tag "matching" "convenience" "abbrev" "emacs>=24.3"
-  :url "http://company-mode.github.io/"
-  :emacs>= 24.3
-  :ensure t
-  :blackout t
-  :leaf-defer nil
-  :bind ((company-active-map
-	  ("M-n" . nil)
-	  ("M-p" . nil)
-	  ("C-s" . company-filter-candidates)
-	  ("C-n" . company-select-next)
-	  ("C-p" . company-select-previous)
-	  ("<tab>" . company-complete-selection))
-	 (company-search-map
-	  ("C-n" . company-select-next)
-	  ("C-p" . company-select-previous)))
-  :custom ((company-idle-delay . 0)
-	   (company-minimum-prefix-length . 1)
-	   (company-transformers . '(company-sort-by-occurrence)))
-  :global-minor-mode global-company-mode)
+(with-eval-after-load 'comint
+  (add-hook 'comint-mode-hook #'my/disable-show-trailing-whitespace))
 
-(leaf company-c-headers
-  :doc "Company mode backend for C/C++ header files"
-  :req "emacs-24.1" "company-0.8"
-  :tag "company" "development" "emacs>=24.1"
-  :added "2020-03-25"
-  :emacs>= 24.1
-  :ensure t
-  :after company
-  :defvar company-backends
-  :config
-  (add-to-list 'company-backends 'company-c-headers))
+(with-eval-after-load 'esh-mode
+  (add-hook 'eshell-mode-hook #'my/disable-show-trailing-whitespace))
 
+(with-eval-after-load 'minibuffer
+  (add-hook 'minibuffer-inactive-mode-hook #'my/disable-show-trailing-whitespace))
+
+(with-eval-after-load 'text-mode
+  (add-hook 'text-mode-hook #'my/disable-show-trailing-whitespace))
+
+;; -- display line number
+(autoload-if-found '(global-display-line-numbers-mode) "display-line-numbers" nil t)
+
+(with-eval-after-load 'display-line-numbers
+  (setopt display-line-numbers-grow-only t))
+
+;; -- electric pair
+(add-hook 'emacs-startup-hook #'electric-pair-mode)
+
+;; -- minibuffer
+(with-eval-after-load 'minibuffer
+  (define-key minibuffer-mode-map (kbd "C-j") #'exit-minibuffer)
+  (define-key minibuffer-mode-map (kbd "M-RET") #'exit-minibuffer))
+
+(setq enable-recursive-minibuffers t)
+
+;; -- uniqify
+(with-eval-after-load 'uniquify
+  (setopt uniquify-buffer-name-style 'post-forward-angle-brackets))
+
+;; -- prohibit kill buffer
+(add-hook 'emacs-startup-hook
+          #'(lambda ()
+              (with-current-buffer "*scratch*"
+                (emacs-lock-mode 'kill))
+              (with-current-buffer "*Messages*"
+                (emacs-lock-mode 'kill))))
+
+;; -- kill ring
+(setopt kill-ring-max 100000)
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages (quote (blackout el-get hydra leaf-keywords leaf))))
+ '(package-selected-packages nil)
+ '(savehist-additional-variables '(kill-ring)))
+
+;; -- truncate lines
+(setq truncate-lines t)
+(setq truncate-partial-width-windows t)
+
+;; -- recentf
+(autoload-if-found '(recentf-mode) "recentf" nil t)
+
+(add-hook 'emacs-startup-hook #'recentf-mode)
+
+(with-eval-after-load 'recentf
+  ;; config
+  (setopt recentf-auto-cleanup 'never)
+  (setopt recentf-max-menu-items 10000)
+  (setopt recentf-max-saved-items 10000)
+  (setopt recentf-save-file  (expand-file-name "~/.emacs.d/.recentf"))
+  )
+
+;; -- elpaca init -------------------------------------------------------------------
+(defvar elpaca-installer-version 0.11)
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                              :ref nil :depth 1 :inherit ignore
+                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                              :build (:not elpaca--activate-package)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (when (<= emacs-major-version 28) (require 'subr-x))
+    (condition-case-unless-debug err
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                  ,@(when-let* ((depth (plist-get order :depth)))
+                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                  ,(plist-get order :repo) ,repo))))
+                  ((zerop (call-process "git" nil buffer t "checkout"
+                                        (or (plist-get order :ref) "--"))))
+                  (emacs (concat invocation-directory invocation-name))
+                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                  ((require 'elpaca))
+                  ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
+
+;; -----------------------------------------------------------------------------------------
+
+(elpaca markdown-mode)
+(elpaca affe)
+(elpaca swiper)
+(elpaca counsel)
+(elpaca prescient)
+(elpaca corfu)
+(elpaca corfu-prescient)
+(elpaca consult)
+(elpaca vertico)
+(elpaca marginalia)
+(elpaca orderless)
+(elpaca cape)
+(elpaca puni)
+(elpaca biomejs-format)
+(elpaca flymake)
+(elpaca flymake-biome)
+(elpaca which-key)
+(elpaca eglot)
+(elpaca vterm)
+; (elpaca files)
+
+(elpaca-wait)
+
+(use-package corfu
+  :init
+  (global-corfu-mode)
+  :config
+  (setq corfu-cycle t)
+  (setq corfu-auto t)
+  (setq corfu-auto-delay 0)
+  (setq corfu-auto-prefix 1)
+  )
+
+(use-package vertico
+  :init
+  (vertico-mode)
+  :config
+  (setq vertico-count 20)
+  )
+
+(use-package marginalia
+  :init
+  (marginalia-mode))
+
+(use-package consult
+  :bind
+  (
+   ("C-c C-x" . consult-mode-command)
+   ("C-x b" . consult-buffer) 
+   :map isearch-mode-map
+   ("M-e" . consult-isearch-history)
+   ("M-s e" . consult-isearch-history)
+   ("M-s l" . consult-line)           
+   ("M-s L" . consult-line-multi)     
+   :map minibuffer-local-map
+   ("M-s" . consult-history)          
+   ("M-r" . consult-history)
+   )
+  :init
+  (advice-add #'register-preview :override #'consult-register-window)
+  (setq register-preview-delay 0.5)
+  (setq xref-show-xrefs-function #'consult-xref
+        xref-show-definitions-function #'consult-xref)
+  :config
+  (consult-customize
+   consult-theme :preview-key '(:debounce 0.2 any)
+   consult-ripgrep consult-git-grep consult-grep consult-man
+   consult-bookmark consult-recent-file consult-xref
+   consult--source-bookmark consult--source-file-register
+   consult--source-recent-file consult--source-project-recent-file
+
+   :preview-key '(:debounce 0.4 any))
+  (setq consult-narrow-key "<")
+  )
+
+(use-package affe
+  :config
+  (consult-customize affe-grep :preview-key "M-."))
+
+(use-package cape
+  :bind
+  ("C-c p" . cape-prefix-map)
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  (add-to-list 'completion-at-point-functions #'cape-ispell)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  )
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless)))
+
+(use-package paren
+  :init
+  (show-paren-mode))
+
+(use-package puni
+  :init
+  (puni-global-mode)
+  :config
+  (add-hook 'term-mode-hook #'puni-disable-puni-mode))
+
+(use-package which-key
+  :config
+  (which-key-mode)
+  (which-key-setup-side-window-right)
+  )
+
+(use-package eglot
+  ;; :hook
+  ;; (prog-mode . eglot-ensure)
+  ;; :config
+  ;; (add-to-list 'eglot-server-programs ')
+  :bind (("M-t" . xref-find-definitions)
+	 ("M-r" . xref-find-references)
+	 ("C-t" . xref-go-back)))
+
+;; (use-package files
+;;   :init
+;;   (auto-save-visited-mode)
+;;   :config
+  
+;;   )
+
+(elpaca-process-queues)
+
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(menu ((t (:background "black" :foreground "yellow"))))
- '(mode-line ((t (:background "white" :foreground "black")))))
+ '(ansi-color-blue ((t (:background "dodgerblue" :foreground "dodgerblue"))))
+ '(ansi-color-bright-black ((t (:background "snow4" :foreground "snow4"))))
+ '(ansi-color-green ((t (:background "greenyellow" :foreground "greenyellow"))))
+ '(font-lock-builtin-face ((t (:foreground "cyan"))))
+ '(font-lock-comment-face ((t (:foreground "green"))))
+ '(font-lock-function-name-face ((t (:foreground "salmon"))))
+ '(font-lock-keyword-face ((t (:foreground "mediumpurple"))))
+ '(font-lock-string-face ((t (:foreground "gold")))))
 
 (provide 'init)
