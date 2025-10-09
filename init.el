@@ -183,6 +183,8 @@
 (elpaca which-key)
 (elpaca eglot)
 (elpaca vterm)
+(elpaca treesit)
+(elpaca tree-sitter-langs)
 ; (elpaca files)
 
 (elpaca-wait)
@@ -190,11 +192,17 @@
 (use-package corfu
   :init
   (global-corfu-mode)
-  :config
-  (setq corfu-cycle t)
-  (setq corfu-auto t)
-  (setq corfu-auto-delay 0)
-  (setq corfu-auto-prefix 1)
+  :custom
+  (corfu-cycle t)
+  (corfu-auto t)
+  (corfu-auto-delay 0)
+  (corfu-auto-prefix 1)
+  (corfu-separator ?\s)
+  (corfu-quit-at-boundary 'never)
+  :bind
+  (:map corfu-map
+	("TAB" . corfu-complete)
+	("RET" . nil))
   )
 
 (use-package vertico
@@ -205,6 +213,7 @@
   )
 
 (use-package marginalia
+  :after vertico
   :init
   (marginalia-mode))
 
@@ -240,8 +249,15 @@
   )
 
 (use-package affe
+  :after orderless
   :config
-  (consult-customize affe-grep :preview-key "M-."))
+  (consult-customize affe-grep :preview-key "M-.")
+  (when (executable-find "rg")
+    (setq affe-grep-command "rg --null --line-buffered --color=never --max-columns=1000 --no-heading --line-number -v ^$ ."))
+  :bind
+  (("C-c s f" . affe-find)
+   ("C-c s g" . affe-grep))
+  )
 
 (use-package cape
   :bind
@@ -267,7 +283,8 @@
   :init
   (puni-global-mode)
   :config
-  (add-hook 'term-mode-hook #'puni-disable-puni-mode))
+  (add-hook 'term-mode-hook #'puni-disable-puni-mode)
+  (add-hook 'vterm-mode-hook #'puni-disable-puni-mode))
 
 (use-package which-key
   :config
@@ -292,7 +309,6 @@
 ;;   )
 
 (elpaca-process-queues)
-
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
