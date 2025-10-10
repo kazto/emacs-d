@@ -97,13 +97,6 @@
 
 ;; -- kill ring
 (setopt kill-ring-max 100000)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages nil)
- '(savehist-additional-variables '(kill-ring)))
 
 ;; -- truncate lines
 (setq truncate-lines t)
@@ -183,7 +176,7 @@
 (elpaca which-key)
 (elpaca eglot)
 (elpaca vterm)
-(elpaca treesit)
+; (elpaca treesit)
 (elpaca tree-sitter-langs)
 ; (elpaca files)
 
@@ -308,7 +301,30 @@
   
 ;;   )
 
+(use-package treesit
+  :ensure nil
+  :when (treesit-available-p)
+  :config  
+  (setq treesit-language-source-alist
+        '((typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
+          (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
+          (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))))
+
+  (setq major-mode-remap-alist
+        '((typescript-mode . typescript-ts-mode)
+          (js-mode . js-ts-mode)
+          (css-mode . css-ts-mode)
+          (json-mode . json-ts-mode))))
+
 (elpaca-process-queues)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages nil)
+ '(savehist-additional-variables '(kill-ring)))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
