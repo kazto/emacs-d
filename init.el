@@ -177,7 +177,9 @@
 (elpaca eglot)
 (elpaca vterm)
 ; (elpaca treesit)
+(elpaca tree-sitter)
 (elpaca tree-sitter-langs)
+(elpaca tide)
 ; (elpaca files)
 
 (elpaca-wait)
@@ -309,12 +311,48 @@
         '((typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
           (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
           (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))))
-
   (setq major-mode-remap-alist
         '((typescript-mode . typescript-ts-mode)
           (js-mode . js-ts-mode)
           (css-mode . css-ts-mode)
-          (json-mode . json-ts-mode))))
+          (json-mode . json-ts-mode)))
+  (setq treesit-font-lock-level 4)
+  )
+
+(use-package tree-sitter
+  :hook
+  ((typescript-ts-mode . tree-sitter-hl-mode)
+   (tsx-ts-mode . tree-sitter-hl-mode))
+  :config
+  (global-tree-sitter-mode)
+  )
+
+(use-package typescript-ts-mode
+  :mode (("\\\\.tsx\\\\'" . tsx-ts-mode)
+	 ("\\\\.tsx\\\\'" . tsx-ts-mode))
+  :config
+  (setq typescript-ts-mode-indent-offset 2)
+  )
+
+(use-package tree-sitter-langs
+  :after tree-sitter
+  :config
+  (tree-sitter-require 'tsx)
+  (add-to-list 'tree-sitter-major-mode-language-alist '(tsx-ts-mode . tsx))
+  )
+
+(use-package tide
+  :hook (tsx-ts-mode . setup-tide-mode)
+  :config
+  (defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1)
+    )
+  )
 
 (elpaca-process-queues)
 
@@ -336,8 +374,14 @@
  '(ansi-color-green ((t (:background "greenyellow" :foreground "greenyellow"))))
  '(font-lock-builtin-face ((t (:foreground "cyan"))))
  '(font-lock-comment-face ((t (:foreground "green"))))
+ '(font-lock-constant-face ((t (:foreground "cyan1"))))
  '(font-lock-function-name-face ((t (:foreground "salmon"))))
- '(font-lock-keyword-face ((t (:foreground "mediumpurple"))))
- '(font-lock-string-face ((t (:foreground "gold")))))
+ '(font-lock-keyword-face ((t (:foreground "aquamarine"))))
+ '(font-lock-string-face ((t (:foreground "gold"))))
+ '(font-lock-type-face ((t (:foreground "lawngreen"))))
+ '(font-lock-variable-name-face ((t (:foreground "salmon"))))
+ '(highlight ((t (:background "darkseagreen4"))))
+ '(link ((t (:foreground "mediumorchid" :underline t))))
+ '(tree-sitter-hl-face:property ((t (:inherit font-lock-constant-face)))))
 
 (provide 'init)
