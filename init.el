@@ -180,6 +180,8 @@
 (elpaca tree-sitter)
 (elpaca tree-sitter-langs)
 (elpaca tide)
+(elpaca lua-mode)
+(elpaca zig-mode)
 ; (elpaca files)
 
 (elpaca-wait)
@@ -328,7 +330,7 @@
   )
 
 (use-package typescript-ts-mode
-  :mode (("\\\\.tsx\\\\'" . tsx-ts-mode)
+  :mode (("\\\\.ts\\\\'" . tsx-ts-mode)
 	 ("\\\\.tsx\\\\'" . tsx-ts-mode))
   :config
   (setq typescript-ts-mode-indent-offset 2)
@@ -354,6 +356,14 @@
     )
   )
 
+(use-package lua-mode
+  :init
+  (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode)))
+
+(use-package zig-mode
+  :init
+  (add-to-list 'auto-mode-alist '("\\.zig$" . zig-mode)))
+
 (elpaca-process-queues)
 
 (custom-set-variables
@@ -361,7 +371,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages nil)
+ '(package-selected-packages '(zig-mode))
  '(savehist-additional-variables '(kill-ring)))
 
 (custom-set-faces

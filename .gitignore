@@ -10,3 +10,4 @@
 /transient
 /.recentf
 /tramp
+/tree-sitter/*.so
