@@ -158,94 +158,8 @@
 ;; -----------------------------------------------------------------------------------------
 
 (elpaca markdown-mode)
-(elpaca affe)
-(elpaca swiper)
-(elpaca counsel)
-(elpaca prescient)
-(elpaca corfu)
-(elpaca corfu-prescient)
-(elpaca consult)
-(elpaca vertico)
-(elpaca marginalia)
-(elpaca orderless)
-(elpaca cape)
-(elpaca puni)
-(elpaca biomejs-format)
-(elpaca flymake)
-(elpaca flymake-biome)
-(elpaca which-key)
-(elpaca eglot)
-(elpaca vterm)
-; (elpaca treesit)
-(elpaca tree-sitter)
-(elpaca tree-sitter-langs)
-(elpaca tide)
-(elpaca lua-mode)
-(elpaca zig-mode)
-; (elpaca files)
-
-(elpaca-wait)
-
-(use-package corfu
-  :init
-  (global-corfu-mode)
-  :custom
-  (corfu-cycle t)
-  (corfu-auto t)
-  (corfu-auto-delay 0)
-  (corfu-auto-prefix 1)
-  (corfu-separator ?\s)
-  (corfu-quit-at-boundary 'never)
-  :bind
-  (:map corfu-map
-	("TAB" . corfu-complete)
-	("RET" . nil))
-  )
-
-(use-package vertico
-  :init
-  (vertico-mode)
-  :config
-  (setq vertico-count 20)
-  )
-
-(use-package marginalia
-  :after vertico
-  :init
-  (marginalia-mode))
-
-(use-package consult
-  :bind
-  (
-   ("C-c C-x" . consult-mode-command)
-   ("C-x b" . consult-buffer) 
-   :map isearch-mode-map
-   ("M-e" . consult-isearch-history)
-   ("M-s e" . consult-isearch-history)
-   ("M-s l" . consult-line)           
-   ("M-s L" . consult-line-multi)     
-   :map minibuffer-local-map
-   ("M-s" . consult-history)          
-   ("M-r" . consult-history)
-   )
-  :init
-  (advice-add #'register-preview :override #'consult-register-window)
-  (setq register-preview-delay 0.5)
-  (setq xref-show-xrefs-function #'consult-xref
-        xref-show-definitions-function #'consult-xref)
-  :config
-  (consult-customize
-   consult-theme :preview-key '(:debounce 0.2 any)
-   consult-ripgrep consult-git-grep consult-grep consult-man
-   consult-bookmark consult-recent-file consult-xref
-   consult--source-bookmark consult--source-file-register
-   consult--source-recent-file consult--source-project-recent-file
-
-   :preview-key '(:debounce 0.4 any))
-  (setq consult-narrow-key "<")
-  )
-
-(use-package affe
+(elpaca affe
+  (use-package affe
   :after orderless
   :config
   (consult-customize affe-grep :preview-key "M-.")
@@ -254,56 +168,182 @@
   :bind
   (("C-c s f" . affe-find)
    ("C-c s g" . affe-grep))
+  ))
+
+;; isearch結果をリスト化するやつ
+(elpaca swiper
+  (use-package swiper
+    :bind
+    ("C-s" . swiper-isearch)
+    )
+  )
+;; ivy-mode後継
+(elpaca counsel
+  (use-package counsel
+    :bind
+    ("M-x" . counsel-M-x)
+    ("C-x C-f" . counsel-find-file)
+    ("C-c k" . counsel-rg)
+    )
   )
 
-(use-package cape
+;; corfu の結果をいい感じにソートするやつ
+(elpaca prescient)
+
+;; completion 
+(elpaca corfu
+  (use-package corfu
+    :init
+    (global-corfu-mode)
+    :custom
+    (corfu-cycle t)
+    (corfu-auto t)
+    (corfu-auto-delay 0.1)
+    (corfu-auto-prefix 1)
+    (corfu-separator ?\s)
+    (corfu-quit-at-boundary 'never)
+    :bind
+    (:map corfu-map
+	  ("TAB" . corfu-complete)
+	  ("RET" . nil))
+    )
+  )
+;; corfu prescient バインディング
+(elpaca corfu-prescient)
+(elpaca consult
+  (use-package consult
+    :bind
+    (
+     ("C-c C-x" . consult-mode-command)
+     ("C-x b" . consult-buffer) 
+     :map isearch-mode-map
+     ("M-e" . consult-isearch-history)
+     ("M-s e" . consult-isearch-history)
+     ("M-s l" . consult-line)           
+     ("M-s L" . consult-line-multi)     
+     :map minibuffer-local-map
+     ("M-s" . consult-history)          
+     ("M-r" . consult-history)
+     )
+    :init
+    (advice-add #'register-preview :override #'consult-register-window)
+    (setq register-preview-delay 0.5)
+    (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)
+    :config
+    (consult-customize
+     consult-theme :preview-key '(:debounce 0.2 any)
+     consult-ripgrep consult-git-grep consult-grep consult-man
+     consult-bookmark consult-recent-file consult-xref
+     consult--source-bookmark consult--source-file-register
+     consult--source-recent-file consult--source-project-recent-file
+     
+     :preview-key '(:debounce 0.4 any))
+    (setq consult-narrow-key "<")
+    )
+  )
+(elpaca vertico
+  (use-package vertico
+    :init
+    (vertico-mode)
+    :config
+    (setq vertico-count 20)
+    )
+  )
+(elpaca marginalia
+  (use-package marginalia
+    :after vertico
+    :init
+    (marginalia-mode)))
+(elpaca orderless
+  (use-package orderless
+    :custom
+    (completion-styles '(orderless)))
+  )
+(elpaca cape
+  (use-package cape
+    :bind
+    ("C-c p" . cape-prefix-map)
+    :init
+    (add-to-list 'completion-at-point-functions #'cape-file)
+    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+    (add-to-list 'completion-at-point-functions #'cape-keyword)
+    (add-to-list 'completion-at-point-functions #'cape-abbrev)
+    (add-to-list 'completion-at-point-functions #'cape-ispell)
+    (add-to-list 'completion-at-point-functions #'cape-symbol)
+    )
+  )
+
+;;;; カッコのペアを検知していい感じにKillするやつ
+;; (elpaca puni
+;;   (use-package puni
+;;     :init
+;;     (puni-global-mode)
+;;     :config
+;;     (add-hook 'term-mode-hook #'puni-disable-puni-mode)
+;;     (add-hook 'vterm-mode-hook #'puni-disable-puni-mode))
+;;   )
+
+(elpaca biomejs-format)
+(elpaca flymake)
+(elpaca flymake-biome)
+(elpaca which-key
+  (use-package which-key
+    :config
+    (which-key-mode)
+    (which-key-setup-side-window-right)
+    )
+  )
+
+(elpaca vterm)
+(elpaca tree-sitter)
+(elpaca tree-sitter-langs)
+(elpaca tide
+  (use-package tide
+    :hook (tsx-ts-mode . setup-tide-mode)
+    :config
+    (defun setup-tide-mode ()
+      (interactive)
+      (tide-setup)
+      (flycheck-mode +1)
+      (setq flycheck-check-syntax-automatically '(save mode-enabled))
+      (eldoc-mode +1)
+      (tide-hl-identifier-mode +1)
+      )
+    )
+  )
+(elpaca lua-mode
+  (use-package lua-mode
+    :init
+    (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode)))
+  )
+(elpaca zig-mode
+  (use-package zig-mode
+    :init
+    (add-to-list 'auto-mode-alist '("\\.zig$" . zig-mode)))
+  )
+
+(elpaca-wait)
+
+(use-package eglot
+  :ensure t
+  :hook
+  (c++-mode . eglot-ensure)
+  (sh-mode . eglot-ensure)
+  (python-mode . eglot-ensure)
+  (ruby-mode. eglot-ensure)
+  (html-mode . eglot-ensure)
+  (cmake-mode . eglot-ensure)
+  (zig-mode . eglot-ensure)
   :bind
-  ("C-c p" . cape-prefix-map)
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  (add-to-list 'completion-at-point-functions #'cape-ispell)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  (("M-t" . xref-find-definitions)
+   ("M-r" . xref-find-references)
+   ("C-t" . xref-go-back))
   )
-
-(use-package orderless
-  :custom
-  (completion-styles '(orderless)))
 
 (use-package paren
   :init
   (show-paren-mode))
-
-(use-package puni
-  :init
-  (puni-global-mode)
-  :config
-  (add-hook 'term-mode-hook #'puni-disable-puni-mode)
-  (add-hook 'vterm-mode-hook #'puni-disable-puni-mode))
-
-(use-package which-key
-  :config
-  (which-key-mode)
-  (which-key-setup-side-window-right)
-  )
-
-(use-package eglot
-  ;; :hook
-  ;; (prog-mode . eglot-ensure)
-  ;; :config
-  ;; (add-to-list 'eglot-server-programs ')
-  :bind (("M-t" . xref-find-definitions)
-	 ("M-r" . xref-find-references)
-	 ("C-t" . xref-go-back)))
-
-;; (use-package files
-;;   :init
-;;   (auto-save-visited-mode)
-;;   :config
-  
-;;   )
 
 (use-package treesit
   :ensure nil
@@ -343,26 +383,9 @@
   (add-to-list 'tree-sitter-major-mode-language-alist '(tsx-ts-mode . tsx))
   )
 
-(use-package tide
-  :hook (tsx-ts-mode . setup-tide-mode)
-  :config
-  (defun setup-tide-mode ()
-    (interactive)
-    (tide-setup)
-    (flycheck-mode +1)
-    (setq flycheck-check-syntax-automatically '(save mode-enabled))
-    (eldoc-mode +1)
-    (tide-hl-identifier-mode +1)
-    )
-  )
-
-(use-package lua-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode)))
-
-(use-package zig-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.zig$" . zig-mode)))
+(use-package emacs
+  :custom
+  (tab-always-indent 'complete))
 
 (elpaca-process-queues)
 
